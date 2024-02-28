@@ -1,0 +1,45 @@
+{
+  "templates": [
+    [
+      "Counter",
+      {
+        "template": "<button gk=\"btn\" data-evidx=\"0\">Click to increase by #{step}</button>\n  <span data-evidx=\"1\">The counter is #{count}</span>",
+        "name": "Counter",
+        "evaluations": [
+          {
+            "endIdx": 59,
+            "startIdx": 53,
+            "javascript": "step",
+            "dependencies": [
+              "step"
+            ]
+          },
+          {
+            "endIdx": 115,
+            "startIdx": 108,
+            "javascript": "count",
+            "dependencies": [
+              "count"
+            ]
+          }
+        ],
+        "props": {
+          "init": 5,
+          "count": 5,
+          "step": 1
+        },
+        "events": {
+          "btn": [
+            "click"
+          ]
+        }
+      }
+    ]
+  ],
+  "names": [
+    [
+      "./components/counter.templ",
+      "Counter"
+    ]
+  ]
+}

@@ -4,7 +4,7 @@ export default class Ganko {
   private static LOCAL_STORAGE_DEFAULT_KEY = "Ganko";
   private static REGEX_DIRECTIVE = /^@(?:(use)\s+(\w+)(?:\s*\?\?\s*?(.+)?)?)|(?:(bind)\s+(\w+)\s+on\s+"([\w]*?)"\s*?)|(?:(name)\s+(\w+))$/mig;
   private static REGEX_JAVASCRIPT_VARIABLES = /\b((?<!\.)[a-zA-Z_]\w*)\b/g;
-  private static REGEX_OPENING_HTML_TAG = /^<([a-z]+)(\s+[^>]*)?>$/i;
+  private static REGEX_OPENING_HTML_TAG = /^<([a-z]+\d*)(\s+[^>]*)?>$/i;
   private static REGEX_TEMPLATE_CONTENT = /<template>([\s\S]*)<\/template>/gm;
   private static REGEX_EVAL = /#{(.*)}/gmi;
   private static IDX_USE = 1;
@@ -42,16 +42,55 @@ export default class Ganko {
   }
 
   /**
+   * Transforms the templates into JSON.
+   */
+  public static toJSON(): string {
+    return JSON.stringify({
+      templates: Array.from(this.templates.entries()),
+      names: Array.from(this.names.entries())
+    });
+  }
+
+  /**
+   * Reads the templates as JSON.
+   * @param json Templates as JSON string.
+   * @returns `true` if the JSON was parsed successfully.
+   */
+  public static fromJSON(json: string): boolean {
+    const parsed = JSON.parse(json);
+    const templates = parsed?.templates;
+    const names = parsed?.names;
+    if (templates && names) {
+      this.templates = new Map(templates)
+      this.names = new Map(names);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Reads a JSON file that holds all the templates.
+   * @param file The path to a JSON file.
+   * @returns `true` if the file was parsed successfully.
+   */
+  public static async fromJSONFile(file: string): Promise<boolean> {
+    const res = await fetch(file);
+    if (res.ok) {
+      const json = await res.text();
+      return this.fromJSON(json);
+    } else {
+      throw new Error(`Could not read file ${file}, status: ${res.status}`);
+    }
+  }
+
+  /**
    * Puts the templates in cache for future use.
    * Might be useful when the app is accessed multiple times
    * and that the templates don't change.
    * @param key The key in the local storage.
    */
   public static cacheTemplates(key = this.LOCAL_STORAGE_DEFAULT_KEY) {
-    localStorage.setItem(key, JSON.stringify({
-      templates: Array.from(this.templates.entries()),
-      names: Array.from(this.names.entries())
-    }));
+    localStorage.setItem(key, this.toJSON());
   }
 
   /**
@@ -71,14 +110,7 @@ export default class Ganko {
   public static readCache(key = this.LOCAL_STORAGE_DEFAULT_KEY): boolean {
     const json = localStorage.getItem(key);
     if (json) {
-      const parsed = JSON.parse(json);
-      const templates = parsed?.templates;
-      const names = parsed?.names;
-      if (templates && names) {
-        this.templates = new Map(templates)
-        this.names = new Map(names);
-        return true;
-      }
+      return this.fromJSON(json);
     }
     return false;
   }
@@ -310,7 +342,6 @@ export default class Ganko {
       data.evaluations[i].endIdx += offset;
       data.evaluations[i].dependencies = this.identifyEvaluationDependencies(data.evaluations[i].javascript, expectedProps);
     }
-    console.log(data.evaluations);
   }
 
   /**
@@ -388,9 +419,9 @@ export default class Ganko {
 export function createEvaluationContext(props: Props): string {
  return Object.keys(props).reduce((p, c) => {
    if (typeof props[c] === "string") {
-     return p + ("const " + c + " = String.raw`" + props[c] + "`;")
+    return p + ("const " + c + " = String.raw`" + props[c] + "`;")
    } else {
-     return p + ("const " + c + " = " + props[c] + ";");
+    return p + ("const " + c + " = " + props[c] + ";");
    }
  }, "");
 }

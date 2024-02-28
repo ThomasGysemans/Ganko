@@ -70,7 +70,7 @@ describe("Simple and basic tests", () => {
 		expect(Ganko.hasTemplate("TitleCard"));
 		expect("title" in template.props).toBeTruthy();
 		expect("name" in template.props).toBeTruthy();
-		expect(template.props["title"]).toBeUndefined();
+		expect(template.props["title"]).toBeNull();
 		expect(template.props["name"]).toEqual("Thomas");
 		expect(template.evaluations.length).toEqual(2);
 		expect(template.evaluations[0].javascript).toEqual("title");
@@ -81,8 +81,8 @@ describe("Simple and basic tests", () => {
 		expect(Ganko.hasTemplate("TitleCard"));
 		const output = Ganko.buildSync("TitleCard", { title: "yoyo" });
 		compareOutput(output, `
-			<h1>yoyo</h1>
-			<p>Je m'appelle THOMAS</p>
+			<h1 data-evidx="0"><!--evidx=0-->yoyo<!--endev--></h1>
+			<p data-evidx="1">Je m'appelle <!--evidx=1-->THOMAS<!--endev--></p>
 		`.trim());
 	});
 
@@ -91,8 +91,8 @@ describe("Simple and basic tests", () => {
 		expect(Ganko.hasTemplate("Counter"));
 		const output = Ganko.buildSync("Counter", { count: 0 });
 		compareOutput(output, `
-			<button gk="btn">Click to increase by 1</button>
-			<span>The counter is 0</span>
+			<button gk="btn" data-evidx="0">Click to increase by <!--evidx=0-->1<!--endev--></button>
+			<span data-evidx="1">The counter is <!--evidx=1-->0<!--endev--></span>
 		`);
 	});
 });

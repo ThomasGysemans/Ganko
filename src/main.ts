@@ -5,8 +5,16 @@ const btn = document.querySelector("#btn")! as HTMLButtonElement;
 
 let loading = true;
 
+function isDevelopmentMode() {
+  return import.meta.env.MODE;
+}
+
 async function loadComponents() {
-  await Ganko.read("./components/counter.templ");
+  if (isDevelopmentMode()) {
+    await Ganko.read("./components/counter.templ");
+  } else {
+    await Ganko.fromJSONFile("./components/all.json");
+  }
   loading = false;
 }
 

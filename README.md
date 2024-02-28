@@ -133,7 +133,33 @@ async function loadComponents() {
 }
 ```
 
-The default key for the LocalStorage is "Ganko" but you can change that in all methods that interact with the cache. You can also delete the cache with the static method `Ganko.clearCache(key?:string)`.
+The default key for the LocalStorage is "Ganko" but you can change that in all methods that interact with the cache.
+
+Altough, the best way to load your components would be to not load any file at all. Indeed, reading a template file is expensive but it will always produce the same output for the same given file. Therefore, when building your app for deployment, consider creating a JSON file that holds all the information Ganko needs:
+
+```typescript
+function isDevelopmentMode() {
+  return import.meta.env.MODE;
+}
+
+async function loadComponents() {
+  if (isDevelopmentMode()) {
+    await Promise.all([
+      Ganko.read("./components/counter.templ")
+    ]);
+  } else {
+    await Ganko.fromJSONFile("./components/all.json");
+  }
+}
+```
+
+To transform the templates into JSON, you have this method:
+
+```typescript
+const json = Ganko.toJSON();
+```
+
+And there you have it, all of your components in a single file that Ganko can read very easily and fast. Combine that with LocalStorage and you'll get blazing fast performances along with a comfortable and simple developer experience.
 
 ## License
 
