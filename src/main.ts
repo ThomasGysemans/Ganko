@@ -6,7 +6,7 @@ const btn = document.querySelector("#btn")! as HTMLButtonElement;
 let loading = true;
 
 function isDevelopmentMode() {
-  return import.meta.env.MODE;
+  return import.meta.env.MODE === "development";
 }
 
 async function loadComponents() {
