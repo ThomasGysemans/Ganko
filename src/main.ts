@@ -20,7 +20,7 @@ interface CounterProps {
 
 btn.addEventListener("click", () => {
   if (!loading) {
-    Ganko.useTemplateSync<CounterProps>("Counter", app, { count: 0 }, {
+    Ganko.useTemplateSync<CounterProps>("Counter", app, { }, {
       btn: {
         click: (_, templ) => {
           templ.update({

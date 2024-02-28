@@ -63,8 +63,8 @@ You can bind events to elements within the template. Consider a simple "Counter"
 @name Counter
 
 <!-- Props without a default value are mandatory when the template is used -->
-@use count
 @use init ?? 0
+@use count ?? init <!-- the default value is valid JavaScript with previous props accessible -->
 @use step ?? 1
 
 <!-- "btn" must be the value of a "gk" HTML attribute -->
@@ -88,7 +88,7 @@ interface CounterProps {
   init: number;
 }
 
-Ganko.useTemplateSync<CounterProps>("Counter", app, { count: 0 }, {
+Ganko.useTemplateSync<CounterProps>("Counter", app, { }, {
   btn: {
     click: (e: MouseEvent, templ) => {
       // Update the template with the "update" method of the GankoTemplate.
