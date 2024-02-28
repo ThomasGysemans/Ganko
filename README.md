@@ -138,10 +138,6 @@ The default key for the LocalStorage is "Ganko" but you can change that in all m
 Altough, the best way to load your components would be to not load any file at all. Indeed, reading a template file is expensive but it will always produce the same output for the same given file. Therefore, when building your app for deployment, consider creating a JSON file that holds all the information Ganko needs:
 
 ```typescript
-function isDevelopmentMode() {
-  return import.meta.env.MODE;
-}
-
 async function loadComponents() {
   if (isDevelopmentMode()) {
     await Promise.all([
