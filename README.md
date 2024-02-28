@@ -88,9 +88,11 @@ interface CounterProps {
   init: number;
 }
 
-Ganko.useTemplateSync<CounterProps>("Counter", app, { }, {
+// Here, "e" in the click event is of type MouseEvent.
+// The second generic parameter is "Event" by default.
+Ganko.useTemplateSync<CounterProps, MouseEvent>("Counter", app, { }, {
   btn: {
-    click: (e: MouseEvent, templ) => {
+    click: (e, templ) => {
       // Update the template with the "update" method of the GankoTemplate.
       // Get the current state with the "getState" method.
       templ.update({

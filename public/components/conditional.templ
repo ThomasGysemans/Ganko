@@ -1,0 +1,11 @@
+@name Conditional
+
+@use open ?? false
+
+@bind click on "btn"
+
+<template>
+  <h1>That's a condition</h1>
+  <button gk="btn">Toggle</button>
+  <span>State is #{open ? "Open" : "Closed"}</span>
+</template>

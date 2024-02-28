@@ -12,7 +12,7 @@ declare global {
     javascript: string;
     startIdx: number;
     endIdx: number;
-    element?: HTMLElement; // the HTML element in which the evaluation happens
+    node?: Node; // the HTML element in which the evaluation happens
     dependencies: string[];
   }
 
@@ -24,7 +24,7 @@ declare global {
 
   type Props = { [key: string]: unknown };
   type StoredEvents = { [key: string]: string[] };
-  type AppliedEvents<P> = { [key: string]: { [key: string]: (e: Event, templ: GankoTemplate<P>) => void } }; // { "btn": { "click": (e) => console.log(e) } }
+  type AppliedEvents<P, E = Event> = { [key: string]: { [key: string]: (e: E, templ: GankoTemplate<P>) => void } }; // { "btn": { "click": (e) => console.log(e) } }
 }
 
 export {};

@@ -81,8 +81,8 @@ describe("Simple and basic tests", () => {
 		expect(Ganko.hasTemplate("TitleCard"));
 		const output = Ganko.buildSync("TitleCard", { title: "yoyo" });
 		compareOutput(output, `
-			<h1 data-evidx="0"><!--evidx=0-->yoyo<!--endev--></h1>
-			<p data-evidx="1">Je m'appelle <!--evidx=1-->THOMAS<!--endev--></p>
+			<h1 data-nearestevidx="0"><!--evidx=0-->yoyo<!--endev--></h1>
+			<p data-nearestevidx="1">Je m'appelle <!--evidx=1-->THOMAS<!--endev--></p>
 		`.trim());
 	});
 
@@ -91,8 +91,8 @@ describe("Simple and basic tests", () => {
 		expect(Ganko.hasTemplate("Counter"));
 		const output = Ganko.buildSync("Counter", { count: 0 });
 		compareOutput(output, `
-			<button gk="btn" data-evidx="0">Click to increase by <!--evidx=0-->1<!--endev--></button>
-			<span data-evidx="1">The counter is <!--evidx=1-->0<!--endev--></span>
+			<button gk="btn" data-nearestevidx="0">Click to increase by <!--evidx=0-->1<!--endev--></button>
+			<span data-nearestevidx="1">The counter is <!--evidx=1-->0<!--endev--></span>
 		`);
 	});
 });

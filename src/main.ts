@@ -11,7 +11,9 @@ function isDevelopmentMode() {
 
 async function loadComponents() {
   if (isDevelopmentMode()) {
-    await Ganko.read("./components/counter.templ");
+    await Promise.all([
+      Ganko.read("./components/counter.templ")
+    ]);
   } else {
     await Ganko.fromJSONFile("./components/all.json");
   }

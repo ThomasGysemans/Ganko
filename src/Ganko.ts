@@ -130,7 +130,7 @@ export default class Ganko {
    * @param props The custom props to be given to the template.
    * @param events The custom events to bind to elements within the template.
    */
-  public static useTemplateSync<P>(template: string, portal: Element, props: Partial<P> = {}, events: AppliedEvents<P> = {}) {
+  public static useTemplateSync<P, E = Event>(template: string, portal: Element, props: Partial<P> = {}, events: AppliedEvents<P, E> = {}) {
     const html = this.buildSync(template, props);
     const templ = this.getTemplate(template)!;
     const templateContainer = this.createTemplateContainer(template, html);
@@ -152,16 +152,36 @@ export default class Ganko {
       for (const element of gkElements) {
         const gk = element.getAttribute("gk")!;
         for (const event of Object.keys(events[gk])) {
-          element.addEventListener(event, (e) => events[gk][event](e, gankoTemplate));
+          element.addEventListener(event, (e) => events[gk][event](e as E, gankoTemplate));
         }
       }
       // Save the element in which each evaluation appears
       // to allow dynamic changes and re-evaluations.
       for (let i = 0; i < templCopy.evaluations.length; i++) {
-        templCopy.evaluations[i].element = templateContainer.querySelector(`[data-evidx='${i}']`) ?? undefined;
+        templCopy.evaluations[i].node = this.locateEvaluationNode(i, templateContainer);
       }
     }
     portal.appendChild(templateContainer);
+  }
+
+  /**
+   * Gets the node that an evaluation is creating within the template.
+   * @param i The index of the evaluation.
+   * @param container The container that holds the template.
+   * @returns The node that the evaluation created.
+   */
+  private static locateEvaluationNode(i: number, container: HTMLDivElement): Node | undefined {
+    const attribute = `[data-nearestevidx='${i}']`;
+    const nearestElement = container.querySelector(attribute) ?? undefined;
+    const isExpectedCommentNode = (c: ChildNode) => c.nodeType === c.COMMENT_NODE && c.textContent === `evidx=${i}`;
+    if (nearestElement) {
+      // The nearest element might be the element with the nearestevidx attribute.
+      // If it's not, then we check with the parent element.
+      // If the comment wasn't found, then updating the evaluation won't be possible.
+      const commentNode = Array.from(nearestElement.childNodes).find(isExpectedCommentNode) ?? (nearestElement.parentElement ? Array.from(nearestElement.parentElement.childNodes).find(isExpectedCommentNode) : undefined);
+      nearestElement.removeAttribute(attribute);
+      return commentNode?.nextSibling ?? undefined;
+    }
   }
 
   /**
@@ -335,7 +355,7 @@ export default class Ganko {
     let offset = 0;
     let attr = "";
     for (let i = 0; i < evIdxs.length; i++) {
-      attr = ` data-evidx="${i}"`;
+      attr = ` data-nearestevidx="${i}"`;
       data.template = data.template.substring(0, evIdxs[i] + offset) + attr + data.template.substring(evIdxs[i] + offset);
       offset += attr.length;
       data.evaluations[i].startIdx += offset;
