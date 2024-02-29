@@ -12,8 +12,9 @@ function isDevelopmentMode() {
 async function loadComponents() {
   if (isDevelopmentMode()) {
     await Promise.all([
-      Ganko.read("./components/counter.templ")
+      Ganko.read("./components/conditional.templ")
     ]);
+    console.log(Ganko.getTemplate("Conditional"));
   } else {
     await Ganko.fromJSONFile("./components/all.json");
   }
@@ -22,20 +23,17 @@ async function loadComponents() {
 
 await loadComponents();
 
-interface CounterProps {
-  count: number;
-  step: number;
-  init: number;
+interface ConditionalProps {
+  open: boolean;
 }
 
 btn.addEventListener("click", () => {
   if (!loading) {
-    Ganko.useTemplateSync<CounterProps>("Counter", app, { }, {
+    Ganko.useTemplateSync<ConditionalProps>("Conditional", app, { }, {
       btn: {
         click: (_, templ) => {
           templ.update({
-            count: templ.getState().count + templ.getState().step,
-            step: templ.getState().step + 1
+            open: !templ.getState().open
           });
         }
       }

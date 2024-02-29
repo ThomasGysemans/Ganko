@@ -4,6 +4,7 @@ export default class Ganko {
   private static LOCAL_STORAGE_DEFAULT_KEY = "Ganko";
   private static REGEX_DIRECTIVE = /^@(?:(use)\s+(\w+)(?:\s*\?\?\s*?(.+)?)?)|(?:(bind)\s+(\w+)\s+on\s+"([\w]*?)"\s*?)|(?:(name)\s+(\w+))$/mig;
   private static REGEX_JAVASCRIPT_VARIABLES = /\b((?<!\.)[a-zA-Z_]\w*)\b/g;
+  private static REGEX_JAVASCRIPT_STRINGS = /(["'`]).*?(?:(?:(?<!\\)(?:\\\\)*)+?)(\1)/gmi;
   private static REGEX_OPENING_HTML_TAG = /^<([a-z]+\d*)(\s+[^>]*)?>$/i;
   private static REGEX_TEMPLATE_CONTENT = /<template>([\s\S]*)<\/template>/gm;
   private static REGEX_EVAL = /#{(.*)}/gmi;
@@ -372,7 +373,11 @@ export default class Ganko {
    * @returns An array holding the variables used in the JavaScript statement.
    */
   private static identifyEvaluationDependencies(js: string, expectedProps: string[]): string[] {
-    return js.match(this.REGEX_JAVASCRIPT_VARIABLES)?.filter(v => expectedProps.includes(v)) ?? [];
+    const variables = js.match(this.REGEX_JAVASCRIPT_VARIABLES)?.filter(v => expectedProps.includes(v));
+    if (variables == null) {
+      return [];
+    }
+    return [...new Set(variables)];
   }
 
   /**

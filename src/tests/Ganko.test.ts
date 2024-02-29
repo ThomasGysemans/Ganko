@@ -73,8 +73,10 @@ describe("Simple and basic tests", () => {
 		expect(template.props["title"]).toBeNull();
 		expect(template.props["name"]).toEqual("Thomas");
 		expect(template.evaluations.length).toEqual(2);
-		expect(template.evaluations[0].javascript).toEqual("title");
+		expect(template.evaluations[0].javascript).toEqual(`title == "yo" ? "yoyo" : title`);
 		expect(template.evaluations[1].javascript).toEqual("name.toUpperCase()");
+		expect(template.evaluations[0].dependencies).toEqual(["title"]);
+		expect(template.evaluations[1].dependencies).toEqual(["name"]);
 	});
 
 	test("Request with simple props", () => {
