@@ -7,7 +7,7 @@ describe("Simple and basic tests", () => {
 		expect(Ganko.getTemplate("yoyo")).toBeUndefined();
 	});
 
-	test("Read from string", async () => {
+	test("Read from string", () => {
 		const name = Ganko.fromString(`
 			<template>
 				<h1>Hello</h1>
@@ -25,5 +25,10 @@ describe("Simple and basic tests", () => {
 		expect(Object.keys(template.events).length).toEqual(0);
 		expect(template.name).toEqual(templateFile);
 		expect(template.evaluations.length).toEqual(0);
+	});
+
+	test("Discard a template", () => {
+		expect(Ganko.discardTemplate("./no-declarative.templ")).toBeTruthy();
+		expect(Ganko.hasTemplate("./no-declarative.templ")).toBeFalsy();
 	});
 });

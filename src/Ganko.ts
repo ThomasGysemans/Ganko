@@ -43,6 +43,31 @@ export default class Ganko {
   }
 
   /**
+   * Deletes a template.
+   * It effectively discards the abstraction of the targeted template.
+   * This discarded template cannot be used afterwards.
+   * @param name The name of the template to discard, or the path to it if it's a file.
+   * @returns `true` if it was removed successfully, or `false` otherwise.
+   */
+  public static discardTemplate(name: string): boolean {
+    let key = "";
+    if (!this.templates.has(name)) {
+      if (this.names.has(name)) {
+        key = name;
+        name = this.names.get(name)!;
+      } else {
+        return false;
+      }
+    }
+    if (key) {
+      this.names.delete(key);
+    } else {
+      this.names.delete(name);
+    }
+    return this.templates.delete(name);
+  }
+
+  /**
    * Transforms the templates into JSON.
    */
   public static toJSON(): string {
@@ -77,7 +102,7 @@ export default class Ganko {
    */
   public static fromString(text: string, file?: string): string {
     if (!file) {
-      file = "file-" + this.generateUID();
+      file = "template-" + this.generateUID();
     }
     const template = this.readTemplate(file, text);
     this.templates.set(template.name, template);
