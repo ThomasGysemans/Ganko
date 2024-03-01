@@ -166,19 +166,18 @@ export default class Ganko {
   }
 
   /**
-   * Creates a template and add it to the DOM through a portal.
+   * Creates a template and add it to the DOM through a "portal".
    * @param template The name of the template to use.
    * @param portal The HTML element that should contain the template.
    * @param props The custom props to be given to the template.
    * @param events The custom events to bind to elements within the template.
-   * @returns An instance of GankoTemplate but only if the evaluation has event bindings (otherwise it returns null).
+   * @returns An instance of GankoTemplate that allows dynamic updates of the output.
    */
-  public static useTemplate<P, E = Event>(template: string, portal: Element, props: Partial<P> = {}, events: AppliedEvents<P, E> = {}): GankoTemplate<P> | null {
+  public static useTemplate<P, E = Event>(template: string, portal: Element, props: Partial<P> = {}, events: AppliedEvents<P, E> = {}): GankoTemplate<P> {
     const html = this.buildSync(template, props);
     const templ = this.getTemplate(template)!;
     const templateContainer = this.createTemplateContainer(template, html);
-    const gkElements = templateContainer.querySelectorAll("[gk]");
-    let gankoTemplate: GankoTemplate<P> | null = null;
+    const gkElements = templateContainer.querySelectorAll("[gk]"); // the elements that the bindings are associated with
     if (gkElements.length > 0) {
       for (const element of gkElements) {
         if (!(element.getAttribute("gk")! in events)) {
@@ -191,25 +190,25 @@ export default class Ganko {
           throw new Error(`Template ${template} was given unexpected event "${appliedEvent}"`);
         }
       }
-      const templCopy = structuredClone(templ);
-      gankoTemplate = new GankoTemplate<P>(templCopy, {...templCopy.props, ...props} as P);
-      for (const element of gkElements) {
-        const gk = element.getAttribute("gk")!;
-        for (const event of Object.keys(events[gk])) {
-          element.addEventListener(event, (e) => events[gk][event](e as E, gankoTemplate!));
-        }
+    }
+    const templCopy = structuredClone(templ);
+    const gankoTemplate = new GankoTemplate<P>(templCopy, {...templCopy.props, ...props} as P);
+    for (const element of gkElements) {
+      const gk = element.getAttribute("gk")!;
+      for (const event of Object.keys(events[gk])) {
+        element.addEventListener(event, (e) => events[gk][event](e as E, gankoTemplate!));
       }
-      // Save the element in which each evaluation appears
-      // to allow dynamic changes and re-evaluations.
-      for (let i = 0; i < templCopy.evaluations.length; i++) {
-        const ev = templCopy.evaluations[i];
-        if (ev.isAttribute) {
-          ev.elementWithAttr = this.locateElementWithGankoAttribute(ev.uid, ev.attr!, templateContainer);
-          ev.dynamic = ev.elementWithAttr != undefined;
-        } else {
-          ev.textNode = this.locateEvaluationTextNode(ev.uid, templateContainer);
-          ev.dynamic = ev.textNode != undefined;
-        }
+    }
+    // Save the element in which each evaluation appears
+    // to allow dynamic changes and re-evaluations.
+    for (let i = 0; i < templCopy.evaluations.length; i++) {
+      const ev = templCopy.evaluations[i];
+      if (ev.isAttribute) {
+        ev.elementWithAttr = this.locateElementWithGankoAttribute(ev.uid, ev.attr!, templateContainer);
+        ev.dynamic = ev.elementWithAttr != undefined;
+      } else {
+        ev.textNode = this.locateEvaluationTextNode(ev.uid, templateContainer);
+        ev.dynamic = ev.textNode != undefined;
       }
     }
     portal.appendChild(templateContainer);

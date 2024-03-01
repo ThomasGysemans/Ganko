@@ -90,7 +90,7 @@ interface CounterProps {
 
 // Here, "e" in the click event is of type MouseEvent.
 // The second generic parameter is "Event" by default.
-Ganko.useTemplate<CounterProps, MouseEvent>("Counter", app, { }, {
+const templ = Ganko.useTemplate<CounterProps, MouseEvent>("Counter", app, { }, {
   btn: {
     click: (e, templ) => {
       // Update the template with the "update" method of the GankoTemplate.
@@ -102,6 +102,8 @@ Ganko.useTemplate<CounterProps, MouseEvent>("Counter", app, { }, {
     }
   }
 });
+
+// You can use the `templ` variable to change its state from somewhere else
 ```
 
 Ganko will re-evaluate the JavaScript code inside the template in a smart way. It locates what needs to be re-evaluated and doesn't touch HTML that doesn't need to be changed.

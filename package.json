@@ -10,7 +10,9 @@
     "test": "vitest --config ./vite.config.ts"
   },
   "devDependencies": {
+    "@types/jsdom": "^21.1.6",
     "@types/node": "^20.11.20",
+    "jsdom": "^24.0.0",
     "tsx": "^4.7.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.4",
