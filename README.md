@@ -182,6 +182,23 @@ const json = Ganko.toJSON();
 
 And there you have it, all of your components in a single file that Ganko can read very easily and fast. Combine that with LocalStorage and you'll get blazing fast performances along with a comfortable and simple developer experience.
 
+## Create templates programmatically
+
+All that Ganko is doing is reading text from a file, creating an abstraction and then using this abstraction to make the use of the template faster while allowing dynamic updates. Therefore, you can feed it with text and it will interpret it:
+
+```typescript
+const newTemplate = `
+  @name NewTemplate
+
+  <template>
+    <h1>This template was created programmatically</h1>
+  </template>
+`;
+
+Ganko.fromString(newTemplate);
+console.log(Ganko.getTemplate("NewTemplate")); // will give you the generated abstraction
+```
+
 ## License
 
 MIT License.
