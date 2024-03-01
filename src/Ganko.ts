@@ -2,7 +2,7 @@ import GankoTemplate from "./GankoTemplate";
 
 export default class Ganko {
   private static LOCAL_STORAGE_DEFAULT_KEY = "Ganko";
-  private static REGEX_DIRECTIVE = /^@(?:(use)\s+(\w+)(?:\s*\?\?\s*?(.+)?)?)|(?:(bind)\s+(\w+)\s+on\s+"([\w]*?)"\s*?)|(?:(name)\s+(\w+))$/mig;
+  private static REGEX_DIRECTIVE = /^\s*@(?:(use)\s+(\w+)(?:\s*\?\?\s*?(.+)?)?)|(?:(bind)\s+(\w+)\s+on\s+"([\w]*?)"\s*?)|(?:(name)\s+(\w+))$/mig;
   private static REGEX_JAVASCRIPT_VARIABLES = /\b((?<!\.)[a-zA-Z_]\w*)\b/g;
   private static REGEX_OPENING_HTML_TAG = /^<([a-z]+\d*)(\s+[^>]*)?>$/i;
   private static REGEX_TEMPLATE_CONTENT = /<template>([\s\S]*)<\/template>/gm;
@@ -73,14 +73,16 @@ export default class Ganko {
    * Creates a new template from text.
    * @param text The template's contents.
    * @param file The name of the file that was read, or a generated random name.
+   * @returns The name of the template that was created.
    */
-  public static fromString(text: string, file?: string) {
+  public static fromString(text: string, file?: string): string {
     if (!file) {
       file = "file-" + this.generateUID();
     }
     const template = this.readTemplate(file, text);
     this.templates.set(template.name, template);
     this.names.set(file, template.name);
+    return template.name;
   }
 
   /**
@@ -347,7 +349,7 @@ export default class Ganko {
   private static readTemplate(file: string, plain: string): Template {
     const data: Template = { template: "", name: file, evaluations: [], props: {}, events: {} };
     const templatePos = plain.indexOf("<template>");
-    const template = plain.substring(templatePos); 
+    const template = plain.substring(templatePos).trim(); 
     if (!template.endsWith("</template>")) {
       throw new Error(`Template file "${file}" should finish with template tag`);
     }
@@ -370,7 +372,7 @@ export default class Ganko {
           data.name = name;
         }
       } else {
-        throw new Error(`Unknown directive in "${match[0]}" in file "${file}"`);
+        throw new Error(`Unknown directive in "${match[0].trim()}" in file "${file}"`);
       }
     }
     this.readEvaluations(data);
