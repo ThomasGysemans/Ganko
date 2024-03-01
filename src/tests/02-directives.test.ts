@@ -2,7 +2,7 @@ import { expect, describe, test } from "vitest";
 import Ganko from "../Ganko";
 
 describe("Templates with directives", () => {
-  test("Read named component", async () => {
+  test("Read named component", () => {
 		const name = Ganko.fromString(`
 			@name TestComponent
 
@@ -14,7 +14,7 @@ describe("Templates with directives", () => {
 		expect(Ganko.hasTemplate("TestComponent")).toBeTruthy();
 	});
 
-	test("Custom props", async () => {
+	test("Custom props", () => {
 		Ganko.fromString(`
 			@name TitleCard
 
@@ -37,5 +37,23 @@ describe("Templates with directives", () => {
 		expect(template.evaluations[1].javascript).toEqual("name.toUpperCase()");
 		expect(template.evaluations[0].dependencies).toEqual(["title"]);
 		expect(template.evaluations[1].dependencies).toEqual(["name"]);
+		expect(Object.keys(template.events).length).toEqual(0);
+	});
+
+	test("Custom event", () => {
+		Ganko.fromString(`
+			@name CustomEvent
+			@bind click on "btn"
+
+			<template>
+				<button gk="btn">Click</button>
+			</template>
+		`);
+		const templ = Ganko.getTemplate("CustomEvent")!;
+		expect(templ).toBeDefined();
+		expect(Object.keys(templ.props).length).toEqual(0);
+		expect(Object.keys(templ.events).length).toEqual(1);
+		expect(Object.keys(templ.events)[0]).toEqual("btn");
+		expect(templ.events["btn"]).toEqual(["click"]);
 	});
 });
