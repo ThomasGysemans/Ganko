@@ -70,6 +70,20 @@ export default class Ganko {
   }
 
   /**
+   * Creates a new template from text.
+   * @param text The template's contents.
+   * @param file The name of the file that was read, or a generated random name.
+   */
+  public static fromString(text: string, file?: string) {
+    if (!file) {
+      file = "file-" + this.generateUID();
+    }
+    const template = this.readTemplate(file, text);
+    this.templates.set(template.name, template);
+    this.names.set(file, template.name);
+  }
+
+  /**
    * Reads a JSON file that holds all the templates.
    * @param file The path to a JSON file.
    * @returns `true` if the file was parsed successfully.
@@ -318,9 +332,7 @@ export default class Ganko {
     const res = await fetch(file);
     if (res.ok) {
       const text = (await res.text()).trim();
-      const template = this.readTemplate(file, text);
-      this.templates.set(template.name, template);
-      this.names.set(file, template.name);
+      this.fromString(text, file);
     } else {
       throw new Error("Error happened when trying to read file '" + file + "' : " + res.status);
     }
@@ -397,7 +409,7 @@ export default class Ganko {
       }
       const js = match[1].trim();
       data.evaluations.push({
-        uid: this.createEvaluationUID(),
+        uid: this.generateUID(),
         endIdx: match.index + match[0].length - 1,
         startIdx: match.index,
         javascript: match[1].trim(),
@@ -429,7 +441,7 @@ export default class Ganko {
    * Each evaluation needs to be identified in a unique way
    * to simplify the instantiation of a template.
    */
-  private static createEvaluationUID(): string {
+  private static generateUID(): string {
     const max = 'z'.charCodeAt(0);
     const min = 'a'.charCodeAt(0);
     let uid = "";
@@ -554,14 +566,14 @@ export default class Ganko {
 /**
 * Creates constant variables to be used within a Function constructor when evaluating JavaScript expressions of a template.
 * @param props The props of the template.
-* @returns The statements to add in a Function constructor.
+* @returns The statements to add at the beginning of a Function's body.
 */
 export function createEvaluationContext(props: Props): string {
- return Object.keys(props).reduce((p, c) => {
-   if (typeof props[c] === "string") {
-    return p + ("const " + c + " = String.raw`" + props[c] + "`;")
-   } else {
-    return p + ("const " + c + " = " + props[c] + ";");
-   }
+  return Object.keys(props).reduce((p, c) => {
+    if (typeof props[c] === "string") {
+      return p + ("const " + c + " = String.raw`" + props[c] + "`;")
+    } else {
+      return p + ("const " + c + " = " + props[c] + ";");
+    }
  }, "");
 }
