@@ -50,7 +50,7 @@ const app = document.querySelector("#app");
 // assuming the template exists,
 // and that the @name property
 // inside the template is indeed "Title"
-Ganko.useTemplateSync<TitleProps>("Title", app, {
+Ganko.useTemplate<TitleProps>("Title", app, {
   title: "Hello!",
   // no need for a description since
   // it was assigned a default value in the template itself
@@ -90,7 +90,7 @@ interface CounterProps {
 
 // Here, "e" in the click event is of type MouseEvent.
 // The second generic parameter is "Event" by default.
-Ganko.useTemplateSync<CounterProps, MouseEvent>("Counter", app, { }, {
+Ganko.useTemplate<CounterProps, MouseEvent>("Counter", app, { }, {
   btn: {
     click: (e, templ) => {
       // Update the template with the "update" method of the GankoTemplate.
@@ -105,6 +105,29 @@ Ganko.useTemplateSync<CounterProps, MouseEvent>("Counter", app, { }, {
 ```
 
 Ganko will re-evaluate the JavaScript code inside the template in a smart way. It locates what needs to be re-evaluated and doesn't touch HTML that doesn't need to be changed.
+
+## Evaluated HTML attributes
+
+If you want to evaluate JavaScript in an HTML attribute, you have to add the "gk-" prefix:
+
+```html
+@name Conditional
+
+@use open ?? true
+
+@bind click on "btn"
+
+<template>
+  <h1>That's a condition</h1>
+  <button gk="btn">Toggle</button>
+  <span>State is #{open ? "Open" : "Closed"}</span>
+  <div gk-class="#{open ? 'open' : ''}" gk-style="#{!open ? 'display:none' : ''}">
+    <p>Is this hidden?</p>
+  </div>
+</template>
+```
+
+The whole attribute must be an evaluation. The "gk-" prefix will get removed automatically in the generated HTML.
 
 ## Optimizing loading time
 

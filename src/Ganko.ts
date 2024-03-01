@@ -4,10 +4,10 @@ export default class Ganko {
   private static LOCAL_STORAGE_DEFAULT_KEY = "Ganko";
   private static REGEX_DIRECTIVE = /^@(?:(use)\s+(\w+)(?:\s*\?\?\s*?(.+)?)?)|(?:(bind)\s+(\w+)\s+on\s+"([\w]*?)"\s*?)|(?:(name)\s+(\w+))$/mig;
   private static REGEX_JAVASCRIPT_VARIABLES = /\b((?<!\.)[a-zA-Z_]\w*)\b/g;
-  private static REGEX_JAVASCRIPT_STRINGS = /(["'`]).*?(?:(?:(?<!\\)(?:\\\\)*)+?)(\1)/gmi;
   private static REGEX_OPENING_HTML_TAG = /^<([a-z]+\d*)(\s+[^>]*)?>$/i;
   private static REGEX_TEMPLATE_CONTENT = /<template>([\s\S]*)<\/template>/gm;
-  private static REGEX_EVAL = /#{(.*)}/gmi;
+  private static REGEX_GANKO_ATTRIBUTE = /^gk-\w+$/;
+  private static REGEX_EVAL = /#{(.*?)}/gmi;
   private static IDX_USE = 1;
   private static IDX_BIND = 4;
   private static IDX_NAME = 7;
@@ -130,12 +130,14 @@ export default class Ganko {
    * @param portal The HTML element that should contain the template.
    * @param props The custom props to be given to the template.
    * @param events The custom events to bind to elements within the template.
+   * @returns An instance of GankoTemplate but only if the evaluation has event bindings (otherwise it returns null).
    */
-  public static useTemplateSync<P, E = Event>(template: string, portal: Element, props: Partial<P> = {}, events: AppliedEvents<P, E> = {}) {
+  public static useTemplate<P, E = Event>(template: string, portal: Element, props: Partial<P> = {}, events: AppliedEvents<P, E> = {}): GankoTemplate<P> | null {
     const html = this.buildSync(template, props);
     const templ = this.getTemplate(template)!;
     const templateContainer = this.createTemplateContainer(template, html);
     const gkElements = templateContainer.querySelectorAll("[gk]");
+    let gankoTemplate: GankoTemplate<P> | null = null;
     if (gkElements.length > 0) {
       for (const element of gkElements) {
         if (!(element.getAttribute("gk")! in events)) {
@@ -149,38 +151,72 @@ export default class Ganko {
         }
       }
       const templCopy = structuredClone(templ);
-      const gankoTemplate = new GankoTemplate<P>(templCopy, {...templCopy.props, ...props} as P);
+      gankoTemplate = new GankoTemplate<P>(templCopy, {...templCopy.props, ...props} as P);
       for (const element of gkElements) {
         const gk = element.getAttribute("gk")!;
         for (const event of Object.keys(events[gk])) {
-          element.addEventListener(event, (e) => events[gk][event](e as E, gankoTemplate));
+          element.addEventListener(event, (e) => events[gk][event](e as E, gankoTemplate!));
         }
       }
       // Save the element in which each evaluation appears
       // to allow dynamic changes and re-evaluations.
       for (let i = 0; i < templCopy.evaluations.length; i++) {
-        templCopy.evaluations[i].node = this.locateEvaluationNode(i, templateContainer);
+        const ev = templCopy.evaluations[i];
+        if (ev.isAttribute) {
+          ev.elementWithAttr = this.locateElementWithGankoAttribute(ev.uid, ev.attr!, templateContainer);
+          ev.dynamic = ev.elementWithAttr != undefined;
+        } else {
+          ev.textNode = this.locateEvaluationTextNode(ev.uid, templateContainer);
+          ev.dynamic = ev.textNode != undefined;
+        }
       }
     }
     portal.appendChild(templateContainer);
+    return gankoTemplate;
+  }
+
+  /**
+   * Gets the nearest HTML element of an evaluation.
+   * It simplifies the calculations that make an evaluation dynamic.
+   * @param uid the unique ID of an evaluation.
+   * @param container The container that holds the template.
+   * @returns The nearest HTML element to the evaluation.
+   */
+  private static locateNearestElementOfEvaluation(uid: string, container: HTMLDivElement): HTMLElement | undefined {
+    const nearestEvAttr = "data-"+uid;
+    return (container.querySelector(`[${nearestEvAttr}]`) as HTMLElement | undefined) ?? undefined;
+  }
+
+  /**
+   * Gets the HTML element that has the Ganko attribute defined by the evaluation of index `i`.
+   * @param uid The UID of the evaluation.
+   * @param expectedAttribute The Ganko attribute.
+   * @param container The container that holds the template.
+   * @returns The HTML element that has the Ganko attribute.
+   */
+  private static locateElementWithGankoAttribute(uid: string, expectedAttribute: string, container: HTMLDivElement): HTMLElement | undefined {
+    const nearestElement = this.locateNearestElementOfEvaluation(uid, container);
+    if (nearestElement && nearestElement.hasAttribute(expectedAttribute)) {
+      nearestElement.removeAttribute("data-" + uid);
+      return nearestElement;
+    }
   }
 
   /**
    * Gets the node that an evaluation is creating within the template.
-   * @param i The index of the evaluation.
+   * @param id The UID of the evaluation.
    * @param container The container that holds the template.
    * @returns The node that the evaluation created.
    */
-  private static locateEvaluationNode(i: number, container: HTMLDivElement): Node | undefined {
-    const attribute = `[data-nearestevidx='${i}']`;
-    const nearestElement = container.querySelector(attribute) ?? undefined;
-    const isExpectedCommentNode = (c: ChildNode) => c.nodeType === c.COMMENT_NODE && c.textContent === `evidx=${i}`;
+  private static locateEvaluationTextNode(uid: string, container: HTMLDivElement): Node | undefined {
+    const nearestElement = this.locateNearestElementOfEvaluation(uid, container);
+    const isExpectedCommentNode = (c: ChildNode) => c.nodeType === c.COMMENT_NODE && c.textContent === `evuid=${uid}`;
     if (nearestElement) {
-      // The nearest element might be the element with the nearestevidx attribute.
+      // The nearest element might be the element with the dta-uid attribute.
       // If it's not, then we check with the parent element.
-      // If the comment wasn't found, then updating the evaluation won't be possible.
+      // If the comment isn't found, then updating the evaluation won't be possible.
       const commentNode = Array.from(nearestElement.childNodes).find(isExpectedCommentNode) ?? (nearestElement.parentElement ? Array.from(nearestElement.parentElement.childNodes).find(isExpectedCommentNode) : undefined);
-      nearestElement.removeAttribute(attribute);
+      nearestElement.removeAttribute("data-"+uid);
       return commentNode?.nextSibling ?? undefined;
     }
   }
@@ -258,12 +294,16 @@ export default class Ganko {
     let offset = 0;
     for (let i = 0; i < templ.evaluations.length; i++) {
       const evaluation = templ.evaluations[i];
-      const result = `<!--evidx=${i}-->` + (new Function(createEvaluationContext(mergedProps) + "return " + evaluation.javascript)()) + "<!--endev-->";
-      output = output.substring(0, evaluation.startIdx + offset) + result + output.substring(evaluation.endIdx + 1 + offset);
-      if (result != undefined) {
-        offset += `${result}`.length - evaluation.javascript.length - 3;
+      const ev = (new Function(createEvaluationContext(mergedProps) + "return " + evaluation.javascript)());
+      let result: string | undefined;
+      if (!evaluation.isAttribute) {
+        result = `<!--evuid=${evaluation.uid}-->` + ev + "<!--endev-->";
+      }
+      output = output.substring(0, evaluation.startIdx + offset) + (result ?? ev) + output.substring(evaluation.endIdx + 1 + offset);
+      if ((result ?? ev) != undefined) {
+        offset += `${(result ?? ev)}`.length - evaluation.javascript.length - 3 
       } else {
-        offset += evaluation.javascript.length;
+        offset += evaluation.javascript.length - 3;
       }
     }
 
@@ -330,39 +370,73 @@ export default class Ganko {
    * @param data The template's data being built.
    */
   private static readEvaluations(data: Template) {
-    const evIdxs: number[] = [];
+    const expectedProps = Object.keys(data.props);
+    const evPositions: number[] = [];
     let foundElement = false;
+    let foundAttribute = false;
+    let evAttr: string | null = null;
     let match: RegExpExecArray | null = null;
     while ((match = this.REGEX_EVAL.exec(data.template)) != null) {
       for (let i = match.index; i >= 0; i--) {
-        if (this.isHTMLElement(i, data.template)) {
+        if (this.isHTMLElement(i, data)) {
           foundElement = true;
-          evIdxs.push(i);
+          evPositions.push(i);
           break;
+        } else {
+          const attr = this.isGankoAttribute(i, data);
+          if (attr != null) {
+            evAttr = attr.attr;
+            foundAttribute = true;
+            evPositions.push(attr.attrIdx);
+            break;
+          }
         }
       }
-      if (!foundElement) {
+      if (!foundElement && !foundAttribute) {
         throw new Error(`Evaluation was done outside of an HTML element in template "${data.name}"`);
       }
-      foundElement = false;
+      const js = match[1].trim();
       data.evaluations.push({
+        uid: this.createEvaluationUID(),
         endIdx: match.index + match[0].length - 1,
         startIdx: match.index,
         javascript: match[1].trim(),
-        dependencies: []
+        dependencies: this.identifyEvaluationDependencies(js, expectedProps),
+        isAttribute: foundAttribute,
+        attr: evAttr?.substring(3) ?? undefined // .substring(3) is to skip the "gk-" prefix
       });
+      foundElement = foundAttribute = false;
+      evAttr = null;
     }
-    const expectedProps = Object.keys(data.props);
     let offset = 0;
     let attr = "";
-    for (let i = 0; i < evIdxs.length; i++) {
-      attr = ` data-nearestevidx="${i}"`;
-      data.template = data.template.substring(0, evIdxs[i] + offset) + attr + data.template.substring(evIdxs[i] + offset);
+    for (let i = 0; i < evPositions.length; i++) {
+      attr = ` data-${data.evaluations[i].uid}`;
+      data.template = data.template.substring(0, evPositions[i] + offset) + attr + data.template.substring(evPositions[i] + offset);
       offset += attr.length;
+      // Remove the "gk-" prefix from the attribute
+      if (data.evaluations[i].isAttribute) {
+        data.template = data.template.substring(0, evPositions[i] + offset) + " " + data.template.substring(evPositions[i] + offset + 4); // the length of "gk-" + 1
+        offset -= 3;
+      }
       data.evaluations[i].startIdx += offset;
       data.evaluations[i].endIdx += offset;
-      data.evaluations[i].dependencies = this.identifyEvaluationDependencies(data.evaluations[i].javascript, expectedProps);
     }
+  }
+
+  /**
+   * Creates a unique string of 4 characters in [a-z] for an evaluation.
+   * Each evaluation needs to be identified in a unique way
+   * to simplify the instantiation of a template.
+   */
+  private static createEvaluationUID(): string {
+    const max = 'z'.charCodeAt(0);
+    const min = 'a'.charCodeAt(0);
+    let uid = "";
+    for (let i = 0; i < 4; i++) {
+      uid += String.fromCharCode(Math.floor(Math.random() * (max - min) + min));
+    }
+    return uid;
   }
 
   /**
@@ -383,18 +457,59 @@ export default class Ganko {
   /**
    * Checks if the given index is pointing at the end of an opening HTML tag within a text.
    * @param idx The ending position of a potential opening tab of an HTML element within the given text.
-   * @param text The text to read.
+   * @param template The full text of the template
    * @returns `true` if the `idx` is pointing at the end of an opening HTML tag.
    */
-  private static isHTMLElement(idx: number, text: string): boolean {
-    if (text[idx] !== ">") {
+  private static isHTMLElement(idx: number, { template }: { template: string }): boolean {
+    if (template[idx] !== ">") {
       return false;
     }
     let element = "";
     do {
-      element += text[idx];
-    } while (idx >= 0 && text[idx--] !== "<");
+      element += template[idx];
+    } while (idx >= 0 && template[idx--] !== "<");
     return this.REGEX_OPENING_HTML_TAG.test(element.split("").reverse().join(""));
+  }
+
+  /**
+   * Checks if an evaluation is in a Ganko attribute, and if it is,
+   * then it returns the exact name of the attribute and its starting position.
+   * @param idx The ending position of a potential Ganko HTML attribute within the given text.
+   * @param template The full text of the template. 
+   * @returns The exact attribute and its starting position.
+   */
+  private static isGankoAttribute(idx: number, { template }: { template: string }): { attr: string, attrIdx: number } | null {
+    if (this.isJavaScriptQuote(template[idx])) {
+      idx -= 2;
+    } else if (template[idx] === "=") {
+      idx--;
+    } else {
+      return null;
+    }
+    let attr = "";
+    do {
+      attr += template[idx];
+    } while (idx >= 0 && template[--idx] !== "-");
+    if (template.substring(idx - 2, idx) !== "gk") {
+      return null;
+    }
+    const reversed = "gk-" + attr.split("").reverse().join("");
+    if (!this.REGEX_GANKO_ATTRIBUTE.test(reversed)) {
+      return null;
+    }
+    return {
+      attr: reversed,
+      attrIdx: idx - 3
+    };
+  }
+
+  /**
+   * Checks if a character is a quote.
+   * @param char A character.
+   * @returns `true` if the character is a JavaScript-valid quote.
+   */
+  private static isJavaScriptQuote(char: string): boolean {
+    return char === "'" || char === '"' || char === "`";
   }
 
   /**

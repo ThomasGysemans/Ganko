@@ -9,10 +9,15 @@ declare global {
   }
 
   interface Evaluation {
+    uid: string;
     javascript: string;
     startIdx: number;
     endIdx: number;
-    node?: Node; // the HTML element in which the evaluation happens
+    textNode?: Node; // the HTML element in which the evaluation happens
+    isAttribute: boolean;
+    attr?: string;
+    elementWithAttr?: HTMLElement;
+    dynamic?: boolean; // "true" for an evaluation that can be updated (textNode and elementWithAttr are not both undefined)
     dependencies: string[];
   }
 

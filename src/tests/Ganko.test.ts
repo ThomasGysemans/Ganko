@@ -82,9 +82,12 @@ describe("Simple and basic tests", () => {
 	test("Request with simple props", () => {
 		expect(Ganko.hasTemplate("TitleCard"));
 		const output = Ganko.buildSync("TitleCard", { title: "yoyo" });
+		const templ = Ganko.getTemplate("TitleCard");
+		const uid0 = templ!.evaluations[0].uid;
+		const uid1 = templ!.evaluations[1].uid;
 		compareOutput(output, `
-			<h1 data-nearestevidx="0"><!--evidx=0-->yoyo<!--endev--></h1>
-			<p data-nearestevidx="1">Je m'appelle <!--evidx=1-->THOMAS<!--endev--></p>
+			<h1 data-${uid0}><!--evuid=${uid0}-->yoyo<!--endev--></h1>
+			<p data-${uid1}>Je m'appelle <!--evuid=${uid1}-->THOMAS<!--endev--></p>
 		`.trim());
 	});
 
@@ -92,9 +95,12 @@ describe("Simple and basic tests", () => {
 		await Ganko.read("./counter.templ");
 		expect(Ganko.hasTemplate("Counter"));
 		const output = Ganko.buildSync("Counter", { count: 0 });
+		const templ = Ganko.getTemplate("Counter");
+		const uid0 = templ!.evaluations[0].uid;
+		const uid1 = templ!.evaluations[1].uid;
 		compareOutput(output, `
-			<button gk="btn" data-nearestevidx="0">Click to increase by <!--evidx=0-->1<!--endev--></button>
-			<span data-nearestevidx="1">The counter is <!--evidx=1-->0<!--endev--></span>
+			<button gk="btn" data-${uid0}>Click to increase by <!--evuid=${uid0}-->1<!--endev--></button>
+			<span data-${uid1}>The counter is <!--evuid=${uid1}-->0<!--endev--></span>
 		`);
 	});
 });

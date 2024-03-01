@@ -21,6 +21,20 @@ export default class GankoTemplate<P> {
   }
 
   /**
+   * Checks if all evaluations of this template can be updated.
+   * It is possible that the template didn't trigger an error during compilation,
+   * but because of this error an evaluation isn't dynamic.
+   */
+  public isFullyDynamic(): boolean {
+    for (const ev of this.data.evaluations) {
+      if (!ev.dynamic) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * Updates the template with new values for the props.
    * @param newState The new values for the props of the statement.
    */
@@ -28,8 +42,13 @@ export default class GankoTemplate<P> {
     const invalidatedEvaluations = this.getInvalidatedEvaluations(newState);
     for (let i = 0; i < invalidatedEvaluations.length; i++) {
       const invalidatedEvaluation = this.data.evaluations[invalidatedEvaluations[i]];
-      if (invalidatedEvaluation.node) {
-        invalidatedEvaluation.node.textContent = new Function(createEvaluationContext(newState) + "return " + invalidatedEvaluation.javascript)();
+      if (invalidatedEvaluation.dynamic) {
+        const ev = new Function(createEvaluationContext(newState) + "return " + invalidatedEvaluation.javascript)();
+        if (invalidatedEvaluation.textNode) {
+          invalidatedEvaluation.textNode.textContent = ev;
+        } else if (invalidatedEvaluation.elementWithAttr) {
+          invalidatedEvaluation.elementWithAttr.setAttribute(invalidatedEvaluation.attr!, ev);
+        }
       }
     }
     this.props = { ...this.props, ...newState };

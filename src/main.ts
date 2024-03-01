@@ -29,7 +29,7 @@ interface ConditionalProps {
 
 btn.addEventListener("click", () => {
   if (!loading) {
-    Ganko.useTemplateSync<ConditionalProps>("Conditional", app, { }, {
+    Ganko.useTemplate<ConditionalProps>("Conditional", app, { }, {
       btn: {
         click: (_, templ) => {
           templ.update({
