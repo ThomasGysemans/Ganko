@@ -6,7 +6,7 @@ A JavaScript framework to fetch and implement dynamic external UI components at 
 
 ## How to use
 
-This project is still under heavy development. As it is now, you can create components as `.templ` files, read them, save them and use them with customisable props and event bindings.
+This project is still under heavy development. As it is now, you can create components as `.templ` files, read them, save them and use them with customizable props and event bindings.
 
 A template looks like this:
 
@@ -35,9 +35,9 @@ async function readComponents() {
 }
 ```
 
-Once the file is read, it creates a raw template that stores all the necessary information of this file for future use. You can check out the contents of a template with the static method `Ganko.getTemplate(name:string)`.
+Once the file is read, it creates an abstraction that stores all the necessary information for future use. You can check out the generated template's abstraction with the static method `Ganko.getTemplate(name:string)`.
 
-Use the template like this:
+Use a template like this:
 
 ```typescript
 interface TitleProps {
@@ -57,7 +57,7 @@ Ganko.useTemplate<TitleProps>("Title", app, {
 });
 ```
 
-You can bind events to elements within the template. Consider a simple "Counter" template:
+You can bind events to elements within a template. Consider a simple "Counter" template:
 
 ```html
 @name Counter
@@ -133,7 +133,7 @@ The whole attribute must be an evaluation. The "gk-" prefix will get removed aut
 
 ## Optimizing loading time
 
-Reading a file and creating the raw template's data is quite heavy work. Note that you can cache your templates and then use them from the LocalStorage, making all of your components ready to use extremely fast.
+Reading a file and creating the abstraction is quite heavy work. Note that you can cache your templates and then use them from the LocalStorage, making all of your components ready to use very fast.
 
 Here is how you could load your components efficiently:
 
@@ -147,7 +147,8 @@ async function loadComponents() {
       return;
     } else {
       // Something went wrong when trying to parse
-      // the json stored in LocalStorage
+      // the json stored in LocalStorage.
+      // Therefore get rid of it
       Ganko.clearCache();
     }
   }
@@ -162,7 +163,7 @@ async function loadComponents() {
 
 The default key for the LocalStorage is "Ganko" but you can change that in all methods that interact with the cache.
 
-Altough, the best way to load your components would be to not load any file at all. Indeed, reading a template file is expensive but it will always produce the same output for the same given file. Therefore, when building your app for deployment, consider creating a JSON file that holds all the information Ganko needs:
+However, if you cache your templates, then you have to come up with your own way to detect whether or not a template's abstraction is out of date and needs to be re-built from the source. A solution to that is to put everything into a single JSON file. Indeed, reading a template file is expensive but it will always produce the same output for the same given file. Therefore, when building your app for deployment, consider creating a JSON file that holds all the information Ganko needs:
 
 ```typescript
 async function loadComponents() {
@@ -182,7 +183,7 @@ To transform the templates into JSON, you have this method:
 const json = Ganko.toJSON();
 ```
 
-And there you have it, all of your components in a single file that Ganko can read very easily and fast. Combine that with LocalStorage and you'll get blazing fast performances along with a comfortable and simple developer experience.
+And there you have it, all of your components in a single file that Ganko can read very easily and quickly. Combine that with LocalStorage and you'll get blazing fast performances along with a comfortable and simple developer experience.
 
 ## Create templates programmatically
 
